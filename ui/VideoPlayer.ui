@@ -32,10 +32,10 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEdit"/>
+      <widget class="QLineEdit" name="filePath"/>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_4">
+      <widget class="QPushButton" name="fileBtn">
        <property name="text">
         <string>文件...</string>
        </property>
@@ -70,7 +70,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="videoShow">
        <property name="text">
         <string>视频显示</string>
        </property>
@@ -112,28 +112,28 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_2">
+      <widget class="QPushButton" name="pauseBtn">
        <property name="text">
         <string>暂停</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_3">
+      <widget class="QPushButton" name="stopBtn">
        <property name="text">
         <string>停止</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_5">
+      <widget class="QPushButton" name="aboutBtn">
        <property name="text">
         <string>关于</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_6">
+      <widget class="QPushButton" name="closeBtn">
        <property name="text">
         <string>关闭</string>
        </property>
