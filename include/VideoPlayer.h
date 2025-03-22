@@ -15,6 +15,7 @@ class VideoPlayer : public QMainWindow
 
   public slots:
     void on_fileBtn_clicked();
+    void on_playBtn_clicked();
 
   private:
     Ui_VideoPlayer *ui;
