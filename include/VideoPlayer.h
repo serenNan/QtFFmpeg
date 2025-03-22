@@ -2,6 +2,8 @@
 #include "ui_VideoPlayer.h"
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QPushButton>
+#include <About.h>
 
 class VideoPlayer : public QMainWindow
 {
@@ -12,7 +14,7 @@ class VideoPlayer : public QMainWindow
     ~VideoPlayer();
 
   public slots:
-    void on_playBtn_clicked();
+
 
   private:
     Ui_VideoPlayer *ui;
