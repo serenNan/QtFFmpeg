@@ -18,12 +18,14 @@ set(SOURCE
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/VideoPlayer.cpp
     ${CMAKE_SOURCE_DIR}/src/About.cpp
+    ${CMAKE_SOURCE_DIR}/src/VideoPlayThread.cpp
 
 )
 
 set(INCLUDE
     ${CMAKE_SOURCE_DIR}/include/VideoPlayer.h
     ${CMAKE_SOURCE_DIR}/include/About.h
+    ${CMAKE_SOURCE_DIR}/include/VideoPlayThread.h
 )
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_SOURCE_DIR}/ui)
