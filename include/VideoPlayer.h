@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <About.h>
 #include <QThread>
+#include <QFileDialog>
 
 
 class VideoPlayer : public QMainWindow
@@ -16,8 +17,9 @@ class VideoPlayer : public QMainWindow
     ~VideoPlayer();
 
   public slots:
-    void on_fileBtn_clicked();
     void on_playBtn_clicked();
+  signals:
+    void playSignal(const QString &fileName);
 
   private:
     Ui_VideoPlayer *ui;

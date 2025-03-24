@@ -1,5 +1,6 @@
 #include "VideoPlayThread.h"
 #include <QThread>
+#include <VideoPlayer.h>
 
 VideoPlayThread::VideoPlayThread(QObject *parent) : QObject(parent) {}
 
@@ -47,7 +48,7 @@ int refresh_video(void *opaque)
     return 0;
 }
 
-int ffmpegplayer()
+int ffmpegplayer(char file[])
 {
     AVFormatContext *pFormatCtx = NULL;
     int videoindex = -1;
@@ -59,7 +60,8 @@ int ffmpegplayer()
     int ret = 0;
     struct SwsContext *img_convert_ctx = NULL;
 
-    char filepath[] = "../video/Titanic.ts";
+    char filepath[1024];
+    strcpy(filepath, file);
 
     FILE *fp_yuv = fopen("output.yuv", "wb+");
 
@@ -236,7 +238,7 @@ int ffmpegplayer()
                 SDL_RenderClear(sdlRenderer);
                 SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, &sdlRect);
                 SDL_RenderPresent(sdlRenderer);
-                //printf("Succeed to decode 1 frame!\n");
+                // printf("Succeed to decode 1 frame!\n");
             }
 
             av_packet_unref(packet);
@@ -308,9 +310,14 @@ int ffmpegplayer()
     return 0;
 }
 
-void VideoPlayThread::play()
+void VideoPlayThread::play(QString filePath)
 {
     qDebug() << "当前线程对象地址：" << QThread::currentThread();
-    ffmpegplayer();
+    // 将 QString 转换为 std::string
+    std::string stdFilePath = filePath.toStdString();
+    // 将 std::string 转换为 char*
+    const char *cFilePath = stdFilePath.c_str();
+    // 调用 ffmpegplayer 函数
+    ffmpegplayer(const_cast<char *>(cFilePath));
     qDebug() << "线程执行完毕";
 }
