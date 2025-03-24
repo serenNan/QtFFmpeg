@@ -1,12 +1,11 @@
 #pragma once
 #include "ui_VideoPlayer.h"
+#include <About.h>
+#include <QFileDialog>
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QPushButton>
-#include <About.h>
 #include <QThread>
-#include <QFileDialog>
-
 
 class VideoPlayer : public QMainWindow
 {
@@ -16,10 +15,11 @@ class VideoPlayer : public QMainWindow
     VideoPlayer(QWidget *parent = nullptr);
     ~VideoPlayer();
 
+  signals:
+    void playSignal(const QString &fileName,QWidget *videoWidget);
+
   public slots:
     void on_playBtn_clicked();
-  signals:
-    void playSignal(const QString &fileName);
 
   private:
     Ui_VideoPlayer *ui;

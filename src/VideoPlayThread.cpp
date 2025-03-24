@@ -48,7 +48,7 @@ int refresh_video(void *opaque)
     return 0;
 }
 
-int ffmpegplayer(char file[])
+int ffmpegplayer(char file[],QWidget *videoWidget)
 {
     AVFormatContext *pFormatCtx = NULL;
     int videoindex = -1;
@@ -159,9 +159,19 @@ int ffmpegplayer(char file[])
     // SDL 2.0 Support for multiple windows
     screen_w = pCodecCtx->width;
     screen_h = pCodecCtx->height;
-    screen =
-        SDL_CreateWindow("Simplest Video Play SDL2", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                         screen_w, screen_h, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    // 显示在弹出窗口
+    // screen =
+    //     SDL_CreateWindow("Simplest Video Play SDL2", SDL_WINDOWPOS_CENTERED,
+    //     SDL_WINDOWPOS_CENTERED,
+    //                      screen_w, screen_h, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    // 显示在 Qt 控件上
+    if (!videoWidget)
+    {
+        qDebug() << "视频窗口为空";
+        return -1;
+    }
+    WId winId = videoWidget->winId();
+    screen = SDL_CreateWindowFrom((void *)winId);
     if (!screen)
     {
         printf("SDL: could not create window - exiting:%s\n", SDL_GetError());
@@ -310,7 +320,7 @@ int ffmpegplayer(char file[])
     return 0;
 }
 
-void VideoPlayThread::play(QString filePath)
+void VideoPlayThread::play(QString filePath,QWidget *videoWidget)
 {
     qDebug() << "当前线程对象地址：" << QThread::currentThread();
     // 将 QString 转换为 std::string
@@ -318,6 +328,6 @@ void VideoPlayThread::play(QString filePath)
     // 将 std::string 转换为 char*
     const char *cFilePath = stdFilePath.c_str();
     // 调用 ffmpegplayer 函数
-    ffmpegplayer(const_cast<char *>(cFilePath));
+    ffmpegplayer(const_cast<char *>(cFilePath),videoWidget);
     qDebug() << "线程执行完毕";
 }

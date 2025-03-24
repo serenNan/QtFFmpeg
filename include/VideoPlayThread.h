@@ -14,7 +14,11 @@ class VideoPlayThread : public QObject
   public:
     VideoPlayThread(QObject *parent = nullptr);
 
-    // 工作函数：播放视频
-    void play(QString filePath);
+    // 工作函数
+    // 播放视频
+    void play(QString filePath,QWidget *videoWidget);
+
+  private:
+    QWidget *videoWidget = nullptr;
 
 };

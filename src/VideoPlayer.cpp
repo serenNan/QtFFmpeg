@@ -23,7 +23,7 @@ VideoPlayer::VideoPlayer(QWidget *parent) : QMainWindow(parent), ui(new Ui_Video
         else
         {
             // 用户取消了文件选择对话框
-            QMessageBox::warning(this,"警告","你没有选择文件");
+            QMessageBox::warning(this, "警告", "你没有选择文件");
         }
     });
 
@@ -32,16 +32,16 @@ VideoPlayer::VideoPlayer(QWidget *parent) : QMainWindow(parent), ui(new Ui_Video
     // 工作类对象
     VideoPlayThread *playVideo = new VideoPlayThread;
     playVideo->moveToThread(playThread);
-    
 
     // 使用 lambda 表达式连接信号和槽
     connect(ui->playBtn, &QPushButton::clicked, this, [this, playVideo]() {
         QString fileName = ui->filePath->text();
         if (!fileName.isEmpty())
         {
-            emit playSignal(fileName);
+            emit playSignal(fileName, ui->videoWidget);
         }
     });
+
     // 连接 playSignal 信号到 VideoPlayThread 的 play 方法
     connect(this, &VideoPlayer::playSignal, playVideo, &VideoPlayThread::play);
 
@@ -66,12 +66,17 @@ void VideoPlayer::on_playBtn_clicked()
 {
     // 发送 playSignal 信号
     QString fileName = ui->filePath->text();
-    if (!fileName.isEmpty())
+    if (fileName.isEmpty())
     {
-        emit playSignal(fileName);
+        QMessageBox::warning(this, "警告", "请先选择文件");
+        return;
     }
-    else
+
+    if (!ui->videoWidget)
     {
-        QMessageBox::warning(this,"警告","请先选择文件");
+        QMessageBox::warning(this, "警告", "视频窗口为空");
+        return;
     }
+
+    emit playSignal(fileName, ui->videoWidget);
 }
