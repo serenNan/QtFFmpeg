@@ -242,9 +242,8 @@ int ffmpegplayer(char file[],QWidget *videoWidget)
                 // FIX: If window is resize
                 sdlRect.x = 0;
                 sdlRect.y = 0;
-                sdlRect.w = screen_w;
-                sdlRect.h = screen_h;
-
+                // 动态获取窗口的宽度和高度
+                SDL_GetWindowSize(screen, &sdlRect.w, &sdlRect.h);
                 SDL_RenderClear(sdlRenderer);
                 SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, &sdlRect);
                 SDL_RenderPresent(sdlRenderer);
