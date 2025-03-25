@@ -45,6 +45,9 @@ VideoPlayer::VideoPlayer(QWidget *parent) : QMainWindow(parent), ui(new Ui_Video
     // 连接 playSignal 信号到 VideoPlayThread 的 play 方法
     connect(this, &VideoPlayer::playSignal, playVideo, &VideoPlayThread::play);
 
+    // 暂停
+    connect(ui->pauseBtn, &QPushButton::clicked, playVideo,&VideoPlayThread::pauseVideo);
+
     playThread->start();
     // 释放线程
     connect(this, &VideoPlayer::destroyed, this, [=] {

@@ -1,6 +1,7 @@
 #include "VideoPlayThread.h"
 #include <QThread>
 #include <VideoPlayer.h>
+#include <atomic>
 
 VideoPlayThread::VideoPlayThread(QObject *parent) : QObject(parent) {}
 
@@ -19,18 +20,13 @@ unsigned char buffer[pixel_w * pixel_h * bpp / 8];
 // 暂停事件
 #define PAUSE_EVENT (SDL_USEREVENT + 3)
 
-// 线程退出标志
-int thread_exit = 0;
-// 暂停标志
-bool pause = false;
-
-int refresh_video(void *opaque)
+int VideoPlayThread ::refresh_video(void *opaque)
 {
-    thread_exit = 0;
-    pause = false;
-    while (!thread_exit)
+    VideoPlayThread *instance = static_cast<VideoPlayThread *>(opaque);
+    qDebug() << "暂停标志：" << instance->pause_flag;
+    while (!instance->thread_exit)
     {
-        if (!pause)
+        if (!instance->pause_flag)
         {
             SDL_Event event;
             event.type = REFRESH_EVENT;
@@ -38,8 +34,7 @@ int refresh_video(void *opaque)
         }
         SDL_Delay(40);
     }
-    thread_exit = 0;
-    pause = false;
+
     // 推送一个退出主线程的事件
     SDL_Event event;
     event.type = BREAK_EVENT;
@@ -47,8 +42,7 @@ int refresh_video(void *opaque)
     SDL_Delay(40);
     return 0;
 }
-
-int ffmpegplayer(char file[],QWidget *videoWidget)
+int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
 {
     AVFormatContext *pFormatCtx = NULL;
     int videoindex = -1;
@@ -196,7 +190,7 @@ int ffmpegplayer(char file[],QWidget *videoWidget)
 
     // 创建一个子线程，用于定时触发视频刷新事件
     // 第一个参数是函数指针
-    SDL_Thread *refresh_thread = SDL_CreateThread(refresh_video, NULL, NULL);
+    SDL_Thread *refresh_thread = SDL_CreateThread(refresh_video, "refresh_video", this);
     SDL_Event event;
 
     while (1)
@@ -204,6 +198,8 @@ int ffmpegplayer(char file[],QWidget *videoWidget)
         SDL_WaitEvent(&event);
         if (event.type == REFRESH_EVENT)
         {
+            if (pause_flag)
+                continue;
             while (1)
             {
                 if ((av_read_frame(pFormatCtx, packet) < 0))
@@ -269,17 +265,6 @@ int ffmpegplayer(char file[],QWidget *videoWidget)
         {
             break;
         }
-        else if (event.type == SDL_KEYDOWN)
-        {
-            if (event.key.keysym.sym == SDLK_SPACE)
-            {
-                pause = !pause;
-            }
-            if (event.key.keysym.sym == SDLK_ESCAPE)
-            {
-                thread_exit = 1;
-            }
-        }
     }
 
     // 刷新解码器
@@ -319,7 +304,7 @@ int ffmpegplayer(char file[],QWidget *videoWidget)
     return 0;
 }
 
-void VideoPlayThread::play(QString filePath,QWidget *videoWidget)
+void VideoPlayThread::play(QString filePath, QWidget *videoWidget)
 {
     qDebug() << "当前线程对象地址：" << QThread::currentThread();
     // 将 QString 转换为 std::string
@@ -327,6 +312,20 @@ void VideoPlayThread::play(QString filePath,QWidget *videoWidget)
     // 将 std::string 转换为 char*
     const char *cFilePath = stdFilePath.c_str();
     // 调用 ffmpegplayer 函数
-    ffmpegplayer(const_cast<char *>(cFilePath),videoWidget);
+    ffmpegplayer(const_cast<char *>(cFilePath), videoWidget);
     qDebug() << "线程执行完毕";
+}
+
+void VideoPlayThread::pauseVideo()
+{
+    pause_flag = !pause_flag.load();
+
+    qDebug() << "Pause state toggled to:" << pause_flag;
+}
+
+// 在VideoPlayThread的析构函数中
+VideoPlayThread::~VideoPlayThread()
+{
+    thread_exit = 1; // 通知线程退出
+    // 等待SDL线程结束（需根据实际情况调整）
 }
