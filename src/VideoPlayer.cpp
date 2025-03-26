@@ -46,11 +46,15 @@ VideoPlayer::VideoPlayer(QWidget *parent) : QMainWindow(parent), ui(new Ui_Video
     connect(this, &VideoPlayer::playSignal, playVideo, &VideoPlayThread::play);
 
     // 暂停
-    connect(ui->pauseBtn, &QPushButton::clicked, playVideo,&VideoPlayThread::pauseVideo);
+    connect(ui->pauseBtn, &QPushButton::clicked, playVideo, &VideoPlayThread::pauseVideo);
+
+    // 停止
+    connect(ui->stopBtn, &QPushButton::clicked, playVideo, &VideoPlayThread::stopVideo);
 
     playThread->start();
     // 释放线程
     connect(this, &VideoPlayer::destroyed, this, [=] {
+        playVideo->stopVideo();
         playThread->quit();
         playThread->wait();
         playThread->deleteLater();
@@ -82,4 +86,17 @@ void VideoPlayer::on_playBtn_clicked()
     }
 
     emit playSignal(fileName, ui->videoWidget);
+}
+
+void VideoPlayer::closeEvent(QCloseEvent *event)
+{
+    // 停止播放
+    playVideo->stopVideo();
+
+    // 等待线程停止
+    playThread->quit();
+    playThread->wait();
+
+    // 调用基类的 closeEvent
+    QMainWindow::closeEvent(event);
 }

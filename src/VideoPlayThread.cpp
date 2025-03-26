@@ -3,7 +3,7 @@
 #include <VideoPlayer.h>
 #include <atomic>
 
-VideoPlayThread::VideoPlayThread(QObject *parent) : QObject(parent) {}
+VideoPlayThread::VideoPlayThread(QObject *parent) : QObject(parent) ,thread_exit(0){}
 
 const int bpp = 12;
 
@@ -36,10 +36,10 @@ int VideoPlayThread ::refresh_video(void *opaque)
     }
 
     // 推送一个退出主线程的事件
-    SDL_Event event;
-    event.type = BREAK_EVENT;
-    SDL_PushEvent(&event);
-    SDL_Delay(40);
+    // SDL_Event event;
+    // event.type = BREAK_EVENT;
+    // SDL_PushEvent(&event);
+    // SDL_Delay(40);
     return 0;
 }
 int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
@@ -149,7 +149,7 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
     }
 
     // 创建一个窗口
-    SDL_Window *screen;
+
     // SDL 2.0 Support for multiple windows
     screen_w = pCodecCtx->width;
     screen_h = pCodecCtx->height;
@@ -172,7 +172,7 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
         return -1;
     }
     // 创建一个渲染器，将窗口与渲染器关联
-    SDL_Renderer *sdlRenderer = SDL_CreateRenderer(screen, -1, 0);
+    sdlRenderer = SDL_CreateRenderer(screen, -1, 0);
 
     Uint32 pixformat = 0;
 
@@ -183,8 +183,8 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
     pixformat = SDL_PIXELFORMAT_IYUV;
 
     // 创建纹理，用于存储视频数据
-    SDL_Texture *sdlTexture = SDL_CreateTexture(sdlRenderer, pixformat, SDL_TEXTUREACCESS_STREAMING,
-                                                pCodecCtx->width, pCodecCtx->height);
+    sdlTexture = SDL_CreateTexture(sdlRenderer, pixformat, SDL_TEXTUREACCESS_STREAMING,
+                                   pCodecCtx->width, pCodecCtx->height);
 
     SDL_Rect sdlRect;
 
@@ -193,77 +193,85 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
     SDL_Thread *refresh_thread = SDL_CreateThread(refresh_video, "refresh_video", this);
     SDL_Event event;
 
-    while (1)
+    while (!thread_exit)
     {
-        SDL_WaitEvent(&event);
-        if (event.type == REFRESH_EVENT)
+        if (SDL_PollEvent(&event))
         {
-            if (pause_flag)
-                continue;
-            while (1)
+            if (event.type == REFRESH_EVENT)
             {
-                if ((av_read_frame(pFormatCtx, packet) < 0))
-                    thread_exit = 1;
-                if (packet->stream_index == videoindex)
-                    break;
-            }
-
-            ret = avcodec_send_packet(pCodecCtx, packet);
-            if (ret < 0)
-            {
-                printf("Error sending a packet for decoding\n");
-                return -1;
-            }
-
-            while (ret >= 0)
-            {
-                ret = avcodec_receive_frame(pCodecCtx, pFrame);
-                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-                    break;
-                else if (ret < 0)
+                if (pause_flag)
+                    continue;
+                while (1)
                 {
-                    printf("Error during decoding\n");
+                    if ((av_read_frame(pFormatCtx, packet) < 0))
+                        thread_exit = 1;
+                    if (packet->stream_index == videoindex)
+                        break;
+                }
+
+                ret = avcodec_send_packet(pCodecCtx, packet);
+                if (ret < 0)
+                {
+                    printf("Error sending a packet for decoding\n");
                     return -1;
                 }
 
-                sws_scale(img_convert_ctx, (const unsigned char *const *)pFrame->data,
-                          pFrame->linesize, 0, pCodecCtx->height, pFrameYUV->data,
-                          pFrameYUV->linesize);
+                while (ret >= 0)
+                {
+                    ret = avcodec_receive_frame(pCodecCtx, pFrame);
+                    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                        break;
+                    else if (ret < 0)
+                    {
+                        printf("Error during decoding\n");
+                        return -1;
+                    }
 
-                int y_size = pCodecCtx->width * pCodecCtx->height;
-                // U V 是分量，宽高各压缩一半，所以大小是 Y 的 1/4
+                    sws_scale(img_convert_ctx, (const unsigned char *const *)pFrame->data,
+                              pFrame->linesize, 0, pCodecCtx->height, pFrameYUV->data,
+                              pFrameYUV->linesize);
 
-                SDL_UpdateTexture(sdlTexture, NULL, pFrameYUV->data[0], pFrameYUV->linesize[0]);
+                    int y_size = pCodecCtx->width * pCodecCtx->height;
+                    // U V 是分量，宽高各压缩一半，所以大小是 Y 的 1/4
 
-                // FIX: If window is resize
-                sdlRect.x = 0;
-                sdlRect.y = 0;
-                // 动态获取窗口的宽度和高度
-                SDL_GetWindowSize(screen, &sdlRect.w, &sdlRect.h);
-                SDL_RenderClear(sdlRenderer);
-                SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, &sdlRect);
-                SDL_RenderPresent(sdlRenderer);
-                // printf("Succeed to decode 1 frame!\n");
+                    SDL_UpdateTexture(sdlTexture, NULL, pFrameYUV->data[0], pFrameYUV->linesize[0]);
+
+                    // FIX: If window is resize
+                    sdlRect.x = 0;
+                    sdlRect.y = 0;
+                    // 动态获取窗口的宽度和高度
+                    SDL_GetWindowSize(screen, &sdlRect.w, &sdlRect.h);
+                    SDL_RenderClear(sdlRenderer);
+                    SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, &sdlRect);
+                    SDL_RenderPresent(sdlRenderer);
+                    // printf("Succeed to decode 1 frame!\n");
+                }
+
+                av_packet_unref(packet);
             }
-
-            av_packet_unref(packet);
+            // SDL_WINDOWEVENT 当窗口大小改变时，更新屏幕宽度和高度
+            else if (event.type == SDL_WINDOWEVENT)
+            {
+                // window
+                SDL_GetWindowSize(screen, &screen_w, &screen_h);
+            }
+            // 当用户关闭窗口时，设置退出标志使子线程退出
+            else if (event.type == SDL_QUIT)
+            {
+                thread_exit = 1;
+            }
+            // 当接收到退出事件时，退出主循环并释放资源
+            // 这个退出事件由子线程提供
+            else if (event.type == BREAK_EVENT)
+            {
+                break;
+            }
         }
-        // SDL_WINDOWEVENT 当窗口大小改变时，更新屏幕宽度和高度
-        else if (event.type == SDL_WINDOWEVENT)
+        else
         {
-            // window
-            SDL_GetWindowSize(screen, &screen_w, &screen_h);
-        }
-        // 当用户关闭窗口时，设置退出标志使子线程退出
-        else if (event.type == SDL_QUIT)
-        {
-            thread_exit = 1;
-        }
-        // 当接收到退出事件时，退出主循环并释放资源
-        // 这个退出事件由子线程提供
-        else if (event.type == BREAK_EVENT)
-        {
-            break;
+            QCoreApplication::processEvents();
+            // 短暂休眠以降低CPU占用
+            SDL_Delay(1);
         }
     }
 
@@ -307,6 +315,7 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
 void VideoPlayThread::play(QString filePath, QWidget *videoWidget)
 {
     qDebug() << "当前线程对象地址：" << QThread::currentThread();
+    thread_exit.store(0, std::memory_order_release); // 重置线程退出标志
     // 将 QString 转换为 std::string
     std::string stdFilePath = filePath.toStdString();
     // 将 std::string 转换为 char*
@@ -318,14 +327,72 @@ void VideoPlayThread::play(QString filePath, QWidget *videoWidget)
 
 void VideoPlayThread::pauseVideo()
 {
-    pause_flag = !pause_flag.load();
+    pause_flag = !pause_flag;
 
     qDebug() << "Pause state toggled to:" << pause_flag;
+    if (pause_flag)
+    {
+        stopRefreshThread();
+    }
+    else
+    {
+        startRefreshThread();
+    }
 }
 
-// 在VideoPlayThread的析构函数中
+void VideoPlayThread::stopRefreshThread()
+{
+    if (refresh_thread)
+    {
+        SDL_WaitThread(refresh_thread, nullptr);
+        refresh_thread = nullptr;
+    }
+}
+
+void VideoPlayThread::startRefreshThread()
+{
+    if (!refresh_thread)
+    {
+        refresh_thread = SDL_CreateThread(refresh_video, "refresh_video", this);
+    }
+}
+
+void VideoPlayThread::stopVideo()
+{
+    thread_exit.store(1, std::memory_order_release); // 通知线程退出
+    if (refresh_thread)
+    {
+        stopRefreshThread(); // 确保刷新线程停止
+    }
+    // 释放SDL资源
+    if (sdlTexture)
+    {
+        SDL_DestroyTexture(sdlTexture);
+        sdlTexture = nullptr;
+    }
+    if (sdlRenderer)
+    {
+        SDL_DestroyRenderer(sdlRenderer);
+        sdlRenderer = nullptr;
+    }
+    if (screen)
+    {
+        SDL_DestroyWindow(screen);
+        screen = nullptr;
+    }
+}
+
 VideoPlayThread::~VideoPlayThread()
 {
-    thread_exit = 1; // 通知线程退出
-    // 等待SDL线程结束（需根据实际情况调整）
+    stopVideo();
+    if (refresh_thread)
+    {
+        stopRefreshThread(); // 确保刷新线程停止
+    }
+    // 等待刷新线程结束
+    if (refresh_thread)
+    {
+        SDL_WaitThread(refresh_thread, nullptr);
+        refresh_thread = nullptr;
+    }
 }

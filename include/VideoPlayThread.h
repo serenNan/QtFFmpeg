@@ -1,5 +1,5 @@
-#include <QObject>
 #include <QDebug>
+#include <QObject>
 extern "C"
 {
 #include <SDL2/SDL.h>
@@ -20,11 +20,19 @@ class VideoPlayThread : public QObject
     void play(QString filePath, QWidget *videoWidget);
 
     void pauseVideo();
+    void stopVideo();
+    void stopRefreshThread();
+    void startRefreshThread();
 
   private:
-    std::atomic<bool> pause_flag{false};
+    SDL_Thread *refresh_thread = nullptr;
+    bool pause_flag{false};
     std::atomic<int> thread_exit{0};
 
     int ffmpegplayer(char file[], QWidget *videoWidget);
     static int refresh_video(void *opaque);
+
+    SDL_Window *screen = nullptr;
+    SDL_Renderer *sdlRenderer = nullptr;
+    SDL_Texture *sdlTexture = nullptr;
 };
