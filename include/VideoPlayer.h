@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QThread>
+#include <QMutex>
 
 class VideoPlayThread;
 
@@ -18,7 +19,7 @@ class VideoPlayer : public QMainWindow
     ~VideoPlayer();
 
   signals:
-    void playSignal(const QString &fileName,QWidget *videoWidget);
+    void playSignal(const QString &fileName, QWidget *videoWidget);
 
   public slots:
     void on_playBtn_clicked();

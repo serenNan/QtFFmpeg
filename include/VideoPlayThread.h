@@ -23,6 +23,7 @@ class VideoPlayThread : public QObject
     void stopVideo();
     void stopRefreshThread();
     void startRefreshThread();
+    bool isPlaying();
 
   private:
     SDL_Thread *refresh_thread = nullptr;
@@ -35,4 +36,5 @@ class VideoPlayThread : public QObject
     SDL_Window *screen = nullptr;
     SDL_Renderer *sdlRenderer = nullptr;
     SDL_Texture *sdlTexture = nullptr;
+    bool isPlaying_flag{false};
 };

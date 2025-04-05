@@ -3,6 +3,7 @@
 #include <VideoPlayer.h>
 #include <atomic>
 
+
 VideoPlayThread::VideoPlayThread(QObject *parent) : QObject(parent) ,thread_exit(0){}
 
 const int bpp = 12;
@@ -314,7 +315,12 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
 
 void VideoPlayThread::play(QString filePath, QWidget *videoWidget)
 {
-    qDebug() << "当前线程对象地址：" << QThread::currentThread();
+    if (isPlaying())
+    {
+        return;
+    }
+    isPlaying_flag = true;
+    qDebug() << "播放线程对象地址：" << QThread::currentThread();
     thread_exit.store(0, std::memory_order_release); // 重置线程退出标志
     // 将 QString 转换为 std::string
     std::string stdFilePath = filePath.toStdString();
@@ -323,6 +329,7 @@ void VideoPlayThread::play(QString filePath, QWidget *videoWidget)
     // 调用 ffmpegplayer 函数
     ffmpegplayer(const_cast<char *>(cFilePath), videoWidget);
     qDebug() << "线程执行完毕";
+    isPlaying_flag = false;
 }
 
 void VideoPlayThread::pauseVideo()
@@ -380,6 +387,20 @@ void VideoPlayThread::stopVideo()
         SDL_DestroyWindow(screen);
         screen = nullptr;
     }
+}
+
+/**
+判断是否有视频在播放的函数
+*/
+bool VideoPlayThread::isPlaying()
+{
+    qDebug() << "isplaying_flag:" << isPlaying_flag;
+    if (isPlaying_flag)
+    {
+        qDebug() << "有线程正在播放视频";
+        return true;
+    }
+    return false;
 }
 
 VideoPlayThread::~VideoPlayThread()
