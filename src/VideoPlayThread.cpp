@@ -3,7 +3,9 @@
 #include <QThread>
 #include <atomic>
 
-VideoPlayThread::VideoPlayThread(QObject *parent) : QObject(parent), thread_exit(0) {}
+VideoPlayThread::VideoPlayThread(QObject *parent) : QObject(parent), exit_flag(0)
+{
+}
 
 const int bpp = 12;
 
@@ -20,11 +22,17 @@ unsigned char buffer[pixel_w * pixel_h * bpp / 8];
 // 暂停事件
 #define PAUSE_EVENT (SDL_USEREVENT + 3)
 
+/**
+ * @brief 刷新视频
+ *
+ * @param opaque
+ * @return int
+ */
 int VideoPlayThread ::refresh_video(void *opaque)
 {
     VideoPlayThread *instance = static_cast<VideoPlayThread *>(opaque);
     qDebug() << "暂停标志：" << instance->pause_flag.load();
-    while (!instance->thread_exit.load(std::memory_order_relaxed))
+    while (!instance->exit_flag.load(std::memory_order_relaxed))
     {
         if (!instance->pause_flag.load())
         {
@@ -42,6 +50,14 @@ int VideoPlayThread ::refresh_video(void *opaque)
     // SDL_Delay(40);
     return 0;
 }
+
+/**
+ * @brief 处理播放视频逻辑的函数
+ *
+ * @param file 播放视频文件
+ * @param videoWidget 播放窗口
+ * @return int
+ */
 int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
 {
     AVFormatContext *pFormatCtx = NULL;
@@ -193,7 +209,7 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
     refresh_thread = SDL_CreateThread(refresh_video, "refresh_video", this);
     SDL_Event event;
 
-    while (!thread_exit)
+    while (!exit_flag)
     {
         if (SDL_PollEvent(&event))
         {
@@ -204,7 +220,7 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
                 while (1)
                 {
                     if ((av_read_frame(pFormatCtx, packet) < 0))
-                        thread_exit = 1;
+                        exit_flag = 1;
                     if (packet->stream_index == videoindex)
                         break;
                 }
@@ -258,7 +274,7 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
             // 当用户关闭窗口时，设置退出标志使子线程退出
             else if (event.type == SDL_QUIT)
             {
-                thread_exit = 1;
+                exit_flag = 1;
             }
             // 当接收到退出事件时，退出主循环并释放资源
             // 这个退出事件由子线程提供
@@ -312,38 +328,52 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
     return 0;
 }
 
+/**
+ * @brief 用于启动播放视频逻辑函数ffmpegplayer
+ *
+ * @param filePath 播放视频文件的路径
+ * @param videoWidget 播放窗口
+ */
 void VideoPlayThread::play(QString filePath, QWidget *videoWidget)
 {
+    // 先判断释放有线程正在播放
     if (isPlaying())
     {
         return;
     }
     isPlaying_flag = true;
     qDebug() << "播放线程对象地址：" << QThread::currentThread();
-    thread_exit.store(0, std::memory_order_release); // 重置线程退出标志
+    exit_flag.store(0, std::memory_order_release); // 重置线程退出标志
+
+    // 将视频文件路径转换成可播放的文件格式
     // 将 QString 转换为 std::string
     std::string stdFilePath = filePath.toStdString();
     // 将 std::string 转换为 char*
     const char *cFilePath = stdFilePath.c_str();
-    // 调用 ffmpegplayer 函数
+
     ffmpegplayer(const_cast<char *>(cFilePath), videoWidget);
     qDebug() << "线程执行完毕";
     isPlaying_flag = false;
 }
 
+/**
+ * @brief 暂停视频
+ *
+ */
 void VideoPlayThread::pauseVideo()
 {
-   
-    pause_flag= !pause_flag.load();
+    pause_flag = !pause_flag.load();
 
     qDebug() << "Pause state toggled to:" << pause_flag.load();
-
 }
 
-
+/**
+ * @brief 停止视频
+ *
+ */
 void VideoPlayThread::stopVideo()
 {
-    thread_exit.store(1, std::memory_order_release); // 通知线程退出
+    exit_flag.store(1, std::memory_order_release); // 通知线程退出
     // 释放SDL资源
     if (sdlTexture)
     {
@@ -363,8 +393,9 @@ void VideoPlayThread::stopVideo()
 }
 
 /**
-判断是否有视频在播放的函数
-*/
+ * @brief 判断是否有线程正在播放
+ *
+ */
 bool VideoPlayThread::isPlaying()
 {
     qDebug() << "isplaying_flag:" << isPlaying_flag;
