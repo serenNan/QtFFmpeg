@@ -27,9 +27,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui_MainWin
         }
     });
 
-    // 播放视频的线程
+    // 创建播放视频的线程
     playThread = new QThread(this);
-    // 工作类对象
+    // 创建工作类对象
     playVideo = new VideoPlayThread;
     playVideo->moveToThread(playThread);
 
@@ -44,19 +44,24 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui_MainWin
 
     playThread->start();
 
-    // 释放线程
-    connect(this, &MainWindow::destroyed, this, &MainWindow::cleanup);
-
     // 关闭窗口
     connect(ui->closeBtn, &QPushButton::clicked, this, &MainWindow::close);
+
+    // 释放线程
+    connect(this, &MainWindow::destroyed, this, &MainWindow::cleanup);
 }
 
 void MainWindow::cleanup()
 {
+    // 停止视频
     if (playVideo)
     {
         playVideo->stopVideo();
+        playVideo->deleteLater();
+        playVideo = nullptr;
     }
+
+    // 退出线程
     if (playThread)
     {
         playThread->quit();
@@ -64,38 +69,36 @@ void MainWindow::cleanup()
         playThread->deleteLater();
         playThread = nullptr;
     }
-    if (playVideo)
-    {
-        playVideo->deleteLater();
-        playVideo = nullptr;
-    }
 }
 
 MainWindow::~MainWindow()
 {
+    cleanup();
     delete ui;
 }
 
 void MainWindow::on_playBtn_clicked()
 {
+    // 防止重复创建线程
     if (playVideo->isPlaying())
     {
         QMessageBox::warning(this, "警告", "视频已经在播放中");
         return;
     }
-    // 发送 playSignal 信号
+
+    // 防止播放文件为空或播放窗口为空
     QString fileName = ui->filePath->text();
     if (fileName.isEmpty())
     {
         QMessageBox::warning(this, "警告", "请先选择文件");
         return;
     }
-
     if (!ui->videoWidget)
     {
         QMessageBox::warning(this, "警告", "视频窗口为空");
         return;
     }
 
+    // 发送播放信号，传递播放文件和播放窗口
     emit playSignal(fileName, ui->videoWidget);
 }
