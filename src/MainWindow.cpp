@@ -28,9 +28,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui_MainWin
     });
 
     // 播放视频的线程
-    QThread *playThread = new QThread(this);
+    playThread = new QThread(this);
     // 工作类对象
-    VideoPlayThread *playVideo = new VideoPlayThread;
+    playVideo = new VideoPlayThread;
     playVideo->moveToThread(playThread);
 
     // 连接 playSignal 信号到 VideoPlayThread 的 play 方法
