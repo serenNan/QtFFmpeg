@@ -23,10 +23,10 @@ unsigned char buffer[pixel_w * pixel_h * bpp / 8];
 int VideoPlayThread ::refresh_video(void *opaque)
 {
     VideoPlayThread *instance = static_cast<VideoPlayThread *>(opaque);
-    qDebug() << "暂停标志：" << instance->pause_flag;
-    while (!instance->thread_exit)
+    qDebug() << "暂停标志：" << instance->pause_flag.load();
+    while (!instance->thread_exit.load(std::memory_order_relaxed))
     {
-        if (!instance->pause_flag)
+        if (!instance->pause_flag.load(std::memory_order_relaxed))
         {
             SDL_Event event;
             event.type = REFRESH_EVENT;
@@ -190,7 +190,7 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
 
     // 创建一个子线程，用于定时触发视频刷新事件
     // 第一个参数是函数指针
-    SDL_Thread *refresh_thread = SDL_CreateThread(refresh_video, "refresh_video", this);
+    refresh_thread = SDL_CreateThread(refresh_video, "refresh_video", this);
     SDL_Event event;
 
     while (!thread_exit)
@@ -199,7 +199,7 @@ int VideoPlayThread ::ffmpegplayer(char file[], QWidget *videoWidget)
         {
             if (event.type == REFRESH_EVENT)
             {
-                if (pause_flag)
+                if (pause_flag.load())
                     continue;
                 while (1)
                 {
@@ -333,43 +333,17 @@ void VideoPlayThread::play(QString filePath, QWidget *videoWidget)
 
 void VideoPlayThread::pauseVideo()
 {
-    pause_flag = !pause_flag;
+    bool oldState = pause_flag.load(std::memory_order_relaxed);
+    pause_flag.store(!oldState, std::memory_order_release);
 
-    qDebug() << "Pause state toggled to:" << pause_flag;
-    if (pause_flag)
-    {
-        stopRefreshThread();
-    }
-    else
-    {
-        startRefreshThread();
-    }
+    qDebug() << "Pause state toggled to:" << pause_flag.load(std::memory_order_relaxed);
+
 }
 
-void VideoPlayThread::stopRefreshThread()
-{
-    if (refresh_thread)
-    {
-        SDL_WaitThread(refresh_thread, nullptr);
-        refresh_thread = nullptr;
-    }
-}
-
-void VideoPlayThread::startRefreshThread()
-{
-    if (!refresh_thread)
-    {
-        refresh_thread = SDL_CreateThread(refresh_video, "refresh_video", this);
-    }
-}
 
 void VideoPlayThread::stopVideo()
 {
     thread_exit.store(1, std::memory_order_release); // 通知线程退出
-    if (refresh_thread)
-    {
-        stopRefreshThread(); // 确保刷新线程停止
-    }
     // 释放SDL资源
     if (sdlTexture)
     {
@@ -405,10 +379,6 @@ bool VideoPlayThread::isPlaying()
 VideoPlayThread::~VideoPlayThread()
 {
     stopVideo();
-    if (refresh_thread)
-    {
-        stopRefreshThread(); // 确保刷新线程停止
-    }
     // 等待刷新线程结束
     if (refresh_thread)
     {

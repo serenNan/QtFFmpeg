@@ -21,13 +21,11 @@ class VideoPlayThread : public QObject
 
     void pauseVideo();
     void stopVideo();
-    void stopRefreshThread();
-    void startRefreshThread();
     bool isPlaying();
 
   private:
     SDL_Thread *refresh_thread = nullptr;
-    bool pause_flag{false};
+    std::atomic<bool> pause_flag{false};
     std::atomic<int> thread_exit{0};
 
     int ffmpegplayer(char file[], QWidget *videoWidget);
