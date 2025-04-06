@@ -43,16 +43,32 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui_MainWin
     connect(ui->stopBtn, &QPushButton::clicked, playVideo, &VideoPlayThread::stopVideo);
 
     playThread->start();
+
     // 释放线程
-    connect(this, &MainWindow::destroyed, this, [=] {
-        playVideo->stopVideo();
-        playThread->quit();
-        playThread->wait();
-        playThread->deleteLater();
-    });
+    connect(this, &MainWindow::destroyed, this, &MainWindow::cleanup);
 
     // 关闭窗口
     connect(ui->closeBtn, &QPushButton::clicked, this, &MainWindow::close);
+}
+
+void MainWindow::cleanup()
+{
+    if (playVideo)
+    {
+        playVideo->stopVideo();
+    }
+    if (playThread)
+    {
+        playThread->quit();
+        playThread->wait();
+        playThread->deleteLater();
+        playThread = nullptr;
+    }
+    if (playVideo)
+    {
+        playVideo->deleteLater();
+        playVideo = nullptr;
+    }
 }
 
 MainWindow::~MainWindow()
@@ -87,12 +103,16 @@ void MainWindow::on_playBtn_clicked()
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     // 停止播放
-    playVideo->stopVideo();
-
+    if (playVideo)
+    {
+        playVideo->stopVideo();
+    }
     // 等待线程停止
-    playThread->quit();
-    playThread->wait();
-
+    if (playThread)
+    {
+        playThread->quit();
+        playThread->wait();
+    }
     // 调用基类的 closeEvent
     QMainWindow::closeEvent(event);
 }

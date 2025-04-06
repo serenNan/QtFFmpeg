@@ -24,6 +24,7 @@ class MainWindow : public QMainWindow
   public slots:
     void on_playBtn_clicked();
     void closeEvent(QCloseEvent *event); // 声明 closeEvent 方法
+    void cleanup();
 
   private:
     Ui_MainWindow *ui;
