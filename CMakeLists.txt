@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5) # CMake install : https://cmake.org/download/
-project(VideoPlayer LANGUAGES CXX)
+project(MainWindow LANGUAGES CXX)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_PREFIX_PATH "/usr/local/Qt/Qt6.5.3/6.5.3/gcc_64") # Qt Kit Dir
 set(CMAKE_AUTOUIC ON)
@@ -16,21 +16,21 @@ find_package(SDL2 REQUIRED)
 
 set(SOURCE 
     ${CMAKE_SOURCE_DIR}/src/main.cpp
-    ${CMAKE_SOURCE_DIR}/src/VideoPlayer.cpp
+    ${CMAKE_SOURCE_DIR}/src/MainWindow.cpp
     ${CMAKE_SOURCE_DIR}/src/About.cpp
     ${CMAKE_SOURCE_DIR}/src/VideoPlayThread.cpp
 
 )
 
 set(INCLUDE
-    ${CMAKE_SOURCE_DIR}/include/VideoPlayer.h
+    ${CMAKE_SOURCE_DIR}/include/MainWindow.h
     ${CMAKE_SOURCE_DIR}/include/About.h
     ${CMAKE_SOURCE_DIR}/include/VideoPlayThread.h
 )
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_SOURCE_DIR}/ui)
 set(UI_FILE
-    ${CMAKE_SOURCE_DIR}/ui/VideoPlayer.ui
+    ${CMAKE_SOURCE_DIR}/ui/MainWindow.ui
     ${CMAKE_SOURCE_DIR}/ui/About.ui
 )
 

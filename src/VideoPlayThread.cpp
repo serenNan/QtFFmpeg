@@ -1,10 +1,9 @@
 #include "VideoPlayThread.h"
+#include <MainWindow.h>
 #include <QThread>
-#include <VideoPlayer.h>
 #include <atomic>
 
-
-VideoPlayThread::VideoPlayThread(QObject *parent) : QObject(parent) ,thread_exit(0){}
+VideoPlayThread::VideoPlayThread(QObject *parent) : QObject(parent), thread_exit(0) {}
 
 const int bpp = 12;
 

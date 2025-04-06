@@ -1,22 +1,22 @@
 #pragma once
-#include "ui_VideoPlayer.h"
+#include "ui_MainWindow.h"
 #include <About.h>
 #include <QFileDialog>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QMutex>
 #include <QPushButton>
 #include <QThread>
-#include <QMutex>
 
 class VideoPlayThread;
 
-class VideoPlayer : public QMainWindow
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
   public:
-    VideoPlayer(QWidget *parent = nullptr);
-    ~VideoPlayer();
+    MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
 
   signals:
     void playSignal(const QString &fileName, QWidget *videoWidget);
@@ -26,7 +26,7 @@ class VideoPlayer : public QMainWindow
     void closeEvent(QCloseEvent *event); // 声明 closeEvent 方法
 
   private:
-    Ui_VideoPlayer *ui;
+    Ui_MainWindow *ui;
     QThread *playThread;
     VideoPlayThread *playVideo; // 声明 playVideo 指针
 };

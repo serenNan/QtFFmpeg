@@ -1,7 +1,7 @@
-#include "VideoPlayer.h"
+#include "MainWindow.h"
 #include "VideoPlayThread.h"
 
-VideoPlayer::VideoPlayer(QWidget *parent) : QMainWindow(parent), ui(new Ui_VideoPlayer)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui_MainWindow)
 {
     // 关于窗口
     ui->setupUi(this);
@@ -34,7 +34,7 @@ VideoPlayer::VideoPlayer(QWidget *parent) : QMainWindow(parent), ui(new Ui_Video
     playVideo->moveToThread(playThread);
 
     // 连接 playSignal 信号到 VideoPlayThread 的 play 方法
-    connect(this, &VideoPlayer::playSignal, playVideo, &VideoPlayThread::play);
+    connect(this, &MainWindow::playSignal, playVideo, &VideoPlayThread::play);
 
     // 暂停
     connect(ui->pauseBtn, &QPushButton::clicked, playVideo, &VideoPlayThread::pauseVideo);
@@ -44,7 +44,7 @@ VideoPlayer::VideoPlayer(QWidget *parent) : QMainWindow(parent), ui(new Ui_Video
 
     playThread->start();
     // 释放线程
-    connect(this, &VideoPlayer::destroyed, this, [=] {
+    connect(this, &MainWindow::destroyed, this, [=] {
         playVideo->stopVideo();
         playThread->quit();
         playThread->wait();
@@ -52,15 +52,15 @@ VideoPlayer::VideoPlayer(QWidget *parent) : QMainWindow(parent), ui(new Ui_Video
     });
 
     // 关闭窗口
-    connect(ui->closeBtn, &QPushButton::clicked, this, &VideoPlayer::close);
+    connect(ui->closeBtn, &QPushButton::clicked, this, &MainWindow::close);
 }
 
-VideoPlayer::~VideoPlayer()
+MainWindow::~MainWindow()
 {
     delete ui;
 }
 
-void VideoPlayer::on_playBtn_clicked()
+void MainWindow::on_playBtn_clicked()
 {
     if (playVideo->isPlaying())
     {
@@ -84,7 +84,7 @@ void VideoPlayer::on_playBtn_clicked()
     emit playSignal(fileName, ui->videoWidget);
 }
 
-void VideoPlayer::closeEvent(QCloseEvent *event)
+void MainWindow::closeEvent(QCloseEvent *event)
 {
     // 停止播放
     playVideo->stopVideo();
