@@ -43,11 +43,6 @@ int VideoPlayThread ::refresh_video(void *opaque)
         SDL_Delay(40);
     }
 
-    // 推送一个退出主线程的事件
-    // SDL_Event event;
-    // event.type = BREAK_EVENT;
-    // SDL_PushEvent(&event);
-    // SDL_Delay(40);
     return 0;
 }
 
