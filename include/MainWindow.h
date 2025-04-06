@@ -18,12 +18,14 @@ class MainWindow : public QMainWindow
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    // 信号
   signals:
     void playSignal(const QString &fileName, QWidget *videoWidget);
 
+    // 槽函数
   public slots:
     void on_playBtn_clicked();
-    void closeEvent(QCloseEvent *event); // 声明 closeEvent 方法
+
     void cleanup();
 
   private:

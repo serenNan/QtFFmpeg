@@ -99,20 +99,3 @@ void MainWindow::on_playBtn_clicked()
 
     emit playSignal(fileName, ui->videoWidget);
 }
-
-void MainWindow::closeEvent(QCloseEvent *event)
-{
-    // 停止播放
-    if (playVideo)
-    {
-        playVideo->stopVideo();
-    }
-    // 等待线程停止
-    if (playThread)
-    {
-        playThread->quit();
-        playThread->wait();
-    }
-    // 调用基类的 closeEvent
-    QMainWindow::closeEvent(event);
-}
