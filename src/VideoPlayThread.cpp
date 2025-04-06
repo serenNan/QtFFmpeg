@@ -26,7 +26,7 @@ int VideoPlayThread ::refresh_video(void *opaque)
     qDebug() << "暂停标志：" << instance->pause_flag.load();
     while (!instance->thread_exit.load(std::memory_order_relaxed))
     {
-        if (!instance->pause_flag.load(std::memory_order_relaxed))
+        if (!instance->pause_flag.load())
         {
             SDL_Event event;
             event.type = REFRESH_EVENT;
@@ -333,10 +333,10 @@ void VideoPlayThread::play(QString filePath, QWidget *videoWidget)
 
 void VideoPlayThread::pauseVideo()
 {
-    bool oldState = pause_flag.load(std::memory_order_relaxed);
-    pause_flag.store(!oldState, std::memory_order_release);
+   
+    pause_flag= !pause_flag.load();
 
-    qDebug() << "Pause state toggled to:" << pause_flag.load(std::memory_order_relaxed);
+    qDebug() << "Pause state toggled to:" << pause_flag.load();
 
 }
 
